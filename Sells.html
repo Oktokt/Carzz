@@ -99,7 +99,7 @@
 
         async function fetchProducts() {
             try {
-                const response = await fetch(scriptURL + "?action=getProducts");
+                const response = await fetch(scriptURL + "?action=getItems");
                 const data = await response.json();
                 const itemSelect = document.getElementById('item');
                 
