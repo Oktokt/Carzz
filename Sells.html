@@ -1,86 +1,134 @@
-<script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbzCsbGv6SX-TFd-S4WAnBg9vWXpwpFCj6ch8LPmE_SacGTGVNH4cqLeoy6L21G_OZXo/exec";
-    let products = {};
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل بيع</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            margin-top: 5px;
+            font-size: 16px;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        button {
+            background-color: #4CAF50;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .success, .error {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
 
-    async function fetchProducts() {
-        try {
-            const response = await fetch(scriptURL + "?action=getItems");
-            const data = await response.json();
-            
-            if (data.error) {
-                showMessage(data.error, "error");
-                return;
+    <h1>تسجيل عملية بيع</h1>
+
+    <div class="form-group">
+        <label for="item">المنتج</label>
+        <select id="item">
+            <option value="">اختر منتج</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="price">السعر</label>
+        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا" readonly>
+    </div>
+
+    <div class="form-group">
+        <label for="notes">ملاحظات</label>
+        <textarea id="notes" rows="3" placeholder="أدخل ملاحظاتك هنا..."></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="customerType">نوع العميل</label>
+        <select id="customerType">
+            <option value="">اختر نوع العميل</option>
+            <option>عمال Carz</option>
+            <option>عمال InstaFix</option>
+            <option>Onwers</option>
+            <option>عملاء مكان</option>
+            <option>عملاء من الشارع</option>
+        </select>
+    </div>
+
+    <button onclick="submitSale()">بيع</button>
+
+    <div id="message"></div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxBBnRwNfvYcB8CuUv-3MvrIS1SeccZfHkTT2q-5Dcu7jYIhuIxGBuar_UydopyRa8C/exec";
+        let products = {};
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(scriptURL + "?action=getItems");
+                const data = await response.json();
+                const itemSelect = document.getElementById('item');
+                
+                if (data.items) {
+                    data.items.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.name;
+                        option.setAttribute('data-price', product.price);
+                        option.textContent = product.name;
+                        itemSelect.appendChild(option);
+                        products[product.name] = product.price;
+                    });
+                } else {
+                    showMessage(data.error, "error");
+                }
+            } catch (error) {
+                console.error("خطأ في جلب المنتجات:", error);
+                showMessage("خطأ في جلب المنتجات.", "error");
             }
-
-            const itemSelect = document.getElementById('item');
-            
-            data.products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.name;
-                option.setAttribute('data-price', product.price);
-                option.textContent = product.name;
-                itemSelect.appendChild(option);
-                products[product.name] = product.price;
-            });
-        } catch (error) {
-            console.error("خطأ في جلب المنتجات:", error);
-            showMessage("خطأ في جلب المنتجات.", "error");
-        }
-    }
-
-    document.getElementById('item').addEventListener('change', function() {
-        const selected = this.value;
-        if (products[selected]) {
-            document.getElementById('price').value = products[selected];
-        }
-    });
-
-    async function submitSale() {
-        const item = document.getElementById('item').value;
-        const price = document.getElementById('price').value;
-        const notes = document.getElementById('notes').value;
-        const customerType = document.getElementById('customerType').value;
-
-        if (!item || !price || !customerType) {
-            showMessage("يرجى ملء جميع الحقول المطلوبة", "error");
-            return;
         }
 
-        if (!confirm("هل تريد تأكيد البيع؟")) return;
-
-        const payload = {
-            item,
-            price,
-            notes,
-            customerType
-        };
-
-        try {
-            const response = await fetch(scriptURL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.result === "success") {
-                showMessage("تم تسجيل البيع بنجاح!", "success");
-                document.getElementById('item').value = "";
-                document.getElementById('price').value = "";
-                document.getElementById('notes').value = "";
-                document.getElementById('customerType').value = "";
+        document.getElementById('item').addEventListener('change', function() {
+            const selected = this.value;
+            if (products[selected]) {
+                document.getElementById('price').value = products[selected];
             } else {
-                showMessage("فشل في تسجيل البيع. حاول مرة أخرى.", "error");
+                document.getElementById('price').value = "";
             }
-        } catch (error) {
-            showMessage("خطأ في الاتصال بالسيرفر.", "error");
-        }
-    }
+        });
 
-    function showMessage(msg, type) {
-        const messageDiv = document.getElementById('message');
-        messageDiv.className = type;
-        messageDiv.textContent = msg;
-    }
-
-    // تحميل المنتجات عند فتح الصفحة
-    fetchProducts();
-</script>
+        async function submitSale() {
+            const item = document.getElementById('item').
