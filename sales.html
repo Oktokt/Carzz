@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عرض المبيعات مع فلترة وتصدير</title>
+  <title>عرض المبيعات مع فلترة وتصدير ورسوم بيانية</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
@@ -12,6 +12,7 @@
     .grand-total { font-weight: bold; background: #ffe0e0; padding: 15px; margin-top: 20px; font-size: 18px; }
     .filters { margin-bottom: 20px; }
     select, input[type="date"], button { padding: 8px; margin: 5px 0; width: 100%; }
+    canvas { max-width: 100%; margin-top: 30px; }
     @media (max-width: 600px) {
       table, thead, tbody, th, td, tr { display: block; }
       td { border: none; border-bottom: 1px solid #ddd; }
@@ -20,7 +21,7 @@
   </style>
 </head>
 <body>
-  <h2>عرض المبيعات مع فلترة وتصدير</h2>
+  <h2>عرض المبيعات مع فلترة وتصدير ورسوم بيانية</h2>
 
   <div class="filters">
     <label>اختر نوع العميل</label>
@@ -46,10 +47,17 @@
 
   <div id="grandTotalDiv" class="grand-total" style="display:none;"></div>
 
+  <h3>رسم بياني - إجمالي المبيعات اليومية</h3>
+  <canvas id="dailySalesChart"></canvas>
+
+  <h3>رسم بياني - توزيع حسب نوع العميل</h3>
+  <canvas id="customerTypeChart"></canvas>
+
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyH1Qg7Da2NB6sMOogNH7xeOTxWNH8RPpFgA_Rlv238KxotQ7RvP2cTekP4FSo6jRP7/exec'; // <<<<< UPDATE THIS
+    const scriptURL = 'https://script.google.com/macros/s/AKfycby0Yxjntinfd0s1DdyhrUO1gTn9jS5Z6M0A0WHIeDU/dev'; // <<<<< UPDATE THIS
     let allSalesData = [];
 
     fetch(scriptURL)
@@ -57,6 +65,7 @@
       .then(data => {
         allSalesData = data;
         displaySales(allSalesData);
+        drawCharts(allSalesData);
       })
       .catch(err => {
         document.body.innerHTML += `<p style="color:red;">فشل تحميل البيانات</p>`;
@@ -67,7 +76,6 @@
       const salesDiv = document.getElementById("salesData");
       salesDiv.innerHTML = "";
 
-      // Group by date
       data.forEach(row => {
         const [date, timestamp, item, price, notes, customerType] = row;
         if (!grouped[date]) grouped[date] = [];
@@ -119,7 +127,6 @@
         salesDiv.innerHTML += tableHTML;
       }
 
-      // Show grand total
       const grandTotalDiv = document.getElementById("grandTotalDiv");
       grandTotalDiv.innerHTML = `الإجمالي الكلي لجميع المبيعات: ${grandTotal.toFixed(2)} جنيه`;
       grandTotalDiv.style.display = "block";
@@ -139,12 +146,14 @@
       }
 
       displaySales(filteredData);
+      drawCharts(filteredData);
     }
 
     function resetFilters() {
       document.getElementById("customerTypeFilter").value = "";
       document.getElementById("dateFilter").value = "";
       displaySales(allSalesData);
+      drawCharts(allSalesData);
     }
 
     function exportTable() {
@@ -156,6 +165,67 @@
       XLSX.utils.book_append_sheet(workbook, worksheet, "المبيعات");
 
       XLSX.writeFile(workbook, "Sales_Report.xlsx");
+    }
+
+    function drawCharts(data) {
+      // Group sales by day
+      const dailyTotals = {};
+      // Group by customer type
+      const customerTypeTotals = {};
+
+      data.forEach(row => {
+        const [date, timestamp, item, price, notes, customerType] = row;
+        if (!dailyTotals[date]) dailyTotals[date] = 0;
+        dailyTotals[date] += Number(price);
+
+        if (!customerTypeTotals[customerType]) customerTypeTotals[customerType] = 0;
+        customerTypeTotals[customerType] += Number(price);
+      });
+
+      const dates = Object.keys(dailyTotals);
+      const totals = Object.values(dailyTotals);
+
+      const ctx1 = document.getElementById('dailySalesChart').getContext('2d');
+      if (window.dailyChart) window.dailyChart.destroy();
+      window.dailyChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'إجمالي المبيعات',
+            data: totals,
+            backgroundColor: '#4CAF50'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      const customerTypes = Object.keys(customerTypeTotals);
+      const customerTotals = Object.values(customerTypeTotals);
+
+      const ctx2 = document.getElementById('customerTypeChart').getContext('2d');
+      if (window.customerChart) window.customerChart.destroy();
+      window.customerChart = new Chart(ctx2, {
+        type: 'pie',
+        data: {
+          labels: customerTypes,
+          datasets: [{
+            label: 'مبيعات حسب نوع العميل',
+            data: customerTotals,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#AA66CC', '#FF9933']
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
     }
   </script>
 </body>
