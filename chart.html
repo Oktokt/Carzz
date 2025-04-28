@@ -2,158 +2,152 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مبيعات اليوم والشهر</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة المبيعات</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Tajawal', sans-serif;
-      background: #f0f6ff;
-      color: #333;
-      margin: 20px;
-      padding: 0;
-    }
-    .card {
-      background: #ffffff;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 16px;
+      background: #f0f4f8;
+      margin: 0;
       padding: 20px;
-      margin-bottom: 20px;
-      text-align: center;
-      transition: 0.3s;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      color: #333;
     }
     h1 {
-      margin-bottom: 20px;
-      color: #004aad;
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 30px;
+      animation: fadeInDown 1s;
     }
-    h2 {
-      margin-bottom: 15px;
-      color: #e60023;
+    .card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+      font-size: 1.5rem;
+      color: #007bff;
+      animation: fadeInUp 1s;
+    }
+    .chart-container {
+      background: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      animation: fadeIn 1.5s;
     }
     canvas {
-      margin-top: 20px;
+      width: 100% !important;
+      height: 300px !important;
+    }
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <h1>مبيعات اليوم والشهر</h1>
+<h1>لوحة عرض المبيعات</h1>
 
-  <div class="card" id="todaySalesCard">
-    <h2>إجمالي مبيعات اليوم: <span id="todayTotal">0</span> ريال</h2>
-    <canvas id="todayChart"></canvas>
-  </div>
+<div id="todayTotal" class="card">تحميل إجمالي مبيعات اليوم...</div>
 
-  <div class="card" id="monthSalesCard">
-    <h2>إجمالي مبيعات الشهر: <span id="monthTotal">0</span> ريال</h2>
-    <canvas id="monthChart"></canvas>
-  </div>
+<div class="chart-container">
+  <canvas id="todaySalesChart"></canvas>
+</div>
 
-  <script>
-    const sheetURL = "https://script.google.com/macros/s/AKfycbwV2b6BLMSdnVHlpuCt1jRW9aWyCuItSZ10NvRdRY-jPJqt1wiGJUFEb7HRw9ShScAd/exec";
+<div id="monthTotal" class="card">تحميل إجمالي مبيعات الشهر...</div>
 
-    async function fetchTodaySales() {
-      const res = await fetch(sheetURL + "?action=getTodaySales");
-      const data = await res.json();
-      return data.sales || [];
-    }
+<div class="chart-container">
+  <canvas id="monthSalesChart"></canvas>
+</div>
 
-    async function fetchMonthSales() {
-      const res = await fetch(sheetURL + "?action=getSales");
-      const data = await res.json();
-      return data.sales || [];
-    }
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbxOe3gnNAFKUz42K4YPMRsXr-RQ6UdsHpKayQ7gQfqtTMlQApq0OEzwIWGe3bMv20U/exec"; // ضع هنا رابط السكربت الخاص بك
 
-    function renderTodayChart(sales) {
-      const labels = sales.map(s => s.item);
-      const prices = sales.map(s => parseFloat(s.price));
+async function fetchTodaySales() {
+  const response = await fetch(scriptURL + "?action=getTodaySales");
+  const data = await response.json();
+  
+  const sales = data.sales || [];
+  const total = sales.reduce((sum, sale) => sum + Number(sale.price || 0), 0);
+  document.getElementById('todayTotal').textContent = "إجمالي مبيعات اليوم: " + total + " جنيه";
 
-      const total = prices.reduce((sum, p) => sum + p, 0);
-      document.getElementById('todayTotal').textContent = total.toFixed(2);
-
-      new Chart(document.getElementById('todayChart'), {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'قيمة المبيعات',
-            data: prices,
-            backgroundColor: '#4e73df'
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
+  const ctx = document.getElementById('todaySalesChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sales.map(s => s.item),
+      datasets: [{
+        label: 'مبيعات اليوم',
+        data: sales.map(s => s.price),
+        backgroundColor: 'rgba(0, 123, 255, 0.6)',
+        borderColor: 'rgba(220, 53, 69, 0.8)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
         }
-      });
+      }
     }
+  });
+}
 
-    function renderMonthChart(sales) {
-      const salesByDate = {};
+async function fetchMonthSales() {
+  const response = await fetch(scriptURL + "?action=getMonthSales");
+  const data = await response.json();
+  
+  const sales = data.sales || [];
+  const total = sales.reduce((sum, sale) => sum + Number(sale.price || 0), 0);
+  document.getElementById('monthTotal').textContent = "إجمالي مبيعات الشهر: " + total + " جنيه";
 
-      sales.forEach(sale => {
-        const date = sale.date.split('T')[0];
-        if (!salesByDate[date]) {
-          salesByDate[date] = 0;
-        }
-        salesByDate[date] += parseFloat(sale.price);
-      });
-
-      const sortedDates = Object.keys(salesByDate).sort();
-      const totals = sortedDates.map(date => salesByDate[date]);
-
-      const totalMonthSales = totals.reduce((sum, val) => sum + val, 0);
-      document.getElementById('monthTotal').textContent = totalMonthSales.toFixed(2);
-
-      new Chart(document.getElementById('monthChart'), {
-        type: 'line',
-        data: {
-          labels: sortedDates,
-          datasets: [{
-            label: 'إجمالي مبيعات اليوم',
-            data: totals,
-            fill: true,
-            backgroundColor: 'rgba(78, 115, 223, 0.2)',
-            borderColor: '#4e73df',
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: true }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
+  const ctx = document.getElementById('monthSalesChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sales.map(s => new Date(s.date).toLocaleDateString('ar-EG')),
+      datasets: [{
+        label: 'مبيعات الشهر',
+        data: sales.map(s => s.price),
+        fill: true,
+        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+        borderColor: 'rgba(0, 123, 255, 1)',
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: 'rgba(220, 53, 69, 0.8)'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
     }
+  });
+}
 
-    async function init() {
-      const todaySales = await fetchTodaySales();
-      renderTodayChart(todaySales);
-
-      const monthSales = await fetchMonthSales();
-      renderMonthChart(monthSales);
-    }
-
-    init();
-  </script>
+// تشغيل الاثنين مع فتح الصفحة
+fetchTodaySales();
+fetchMonthSales();
+</script>
 
 </body>
 </html>
