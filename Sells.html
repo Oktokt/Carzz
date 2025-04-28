@@ -69,7 +69,7 @@
 
     <div class="form-group">
         <label for="price">السعر</label>
-        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا" readonly>
+        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا">
     </div>
 
     <div class="form-group">
@@ -94,30 +94,25 @@
     <div id="message"></div>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxgDyWOUU8VdKsu0qQXQFjuLemAG37KB2opoJqYm9F1tm5ZUoIcAVLFoNjXXVNrzm_h/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwjJ7cN4eijqkluNFSHEKjuFiGbNGIO3RaBRhOInDpnfsSQyem3LKMWQRKqStbQv19B/exec";
         let products = {};
 
         async function fetchProducts() {
             try {
-                const response = await fetch(scriptURL + "?action=getItems");
+                const response = await fetch(scriptURL + "?action=getProducts");
                 const data = await response.json();
                 const itemSelect = document.getElementById('item');
                 
-                if (data.items) {
-                    data.items.forEach(product => {
-                        const option = document.createElement('option');
-                        option.value = product.name;
-                        option.setAttribute('data-price', product.price);
-                        option.textContent = product.name;
-                        itemSelect.appendChild(option);
-                        products[product.name] = product.price;
-                    });
-                } else {
-                    showMessage(data.error, "error");
-                }
+                data.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.name;
+                    option.setAttribute('data-price', product.price);
+                    option.textContent = product.name;
+                    itemSelect.appendChild(option);
+                    products[product.name] = product.price;
+                });
             } catch (error) {
                 console.error("خطأ في جلب المنتجات:", error);
-                showMessage("خطأ في جلب المنتجات.", "error");
             }
         }
 
@@ -125,10 +120,58 @@
             const selected = this.value;
             if (products[selected]) {
                 document.getElementById('price').value = products[selected];
-            } else {
-                document.getElementById('price').value = "";
             }
         });
 
         async function submitSale() {
-            const item = document.getElementById('item').
+            const item = document.getElementById('item').value;
+            const price = document.getElementById('price').value;
+            const notes = document.getElementById('notes').value;
+            const customerType = document.getElementById('customerType').value;
+
+            if (!item || !price || !customerType) {
+                showMessage("يرجى ملء جميع الحقول المطلوبة", "error");
+                return;
+            }
+
+            if (!confirm("هل تريد تأكيد البيع؟")) return;
+
+            const payload = {
+                item,
+                price,
+                notes,
+                customerType
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.result === "success") {
+                    showMessage("تم تسجيل البيع بنجاح!", "success");
+                    document.getElementById('item').value = "";
+                    document.getElementById('price').value = "";
+                    document.getElementById('notes').value = "";
+                    document.getElementById('customerType').value = "";
+                } else {
+                    showMessage("فشل في تسجيل البيع. حاول مرة أخرى.", "error");
+                }
+            } catch (error) {
+                showMessage("خطأ في الاتصال بالسيرفر.", "error");
+            }
+        }
+
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = msg;
+        }
+
+        // تحميل المنتجات عند فتح الصفحة
+        fetchProducts();
+    </script>
+
+</body>
+</html>
