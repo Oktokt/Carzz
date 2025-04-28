@@ -2,12 +2,16 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عرض المبيعات</title>
+  <title>عرض المبيعات مع فلترة وتصدير</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: right; }
     th { background-color: #f2f2f2; }
+    .total { font-weight: bold; background: #e0ffe0; }
+    .grand-total { font-weight: bold; background: #ffe0e0; padding: 15px; margin-top: 20px; font-size: 18px; }
+    .filters { margin-bottom: 20px; }
+    select, input[type="date"], button { padding: 8px; margin: 5px 0; width: 100%; }
     @media (max-width: 600px) {
       table, thead, tbody, th, td, tr { display: block; }
       td { border: none; border-bottom: 1px solid #ddd; }
@@ -16,42 +20,143 @@
   </style>
 </head>
 <body>
-  <h2>عرض المبيعات السابقة</h2>
-  <table id="salesTable">
-    <thead>
-      <tr>
-        <th>التاريخ</th>
-        <th>الوقت</th>
-        <th>الصنف</th>
-        <th>السعر</th>
-        <th>ملاحظات</th>
-        <th>نوع العميل</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h2>عرض المبيعات مع فلترة وتصدير</h2>
+
+  <div class="filters">
+    <label>اختر نوع العميل</label>
+    <select id="customerTypeFilter">
+      <option value="">-- كل الأنواع --</option>
+      <option value="عمال Carz">عمال Carz</option>
+      <option value="عمال InstaFix">عمال InstaFix</option>
+      <option value="Owners">Owners</option>
+      <option value="عملاء مكان">عملاء مكان</option>
+      <option value="عملاء من الشارع">عملاء من الشارع</option>
+    </select>
+
+    <label>اختر تاريخ محدد</label>
+    <input type="date" id="dateFilter">
+
+    <button onclick="applyFilters()">تطبيق الفلترة</button>
+    <button onclick="resetFilters()" style="background:#dc3545;">مسح الفلترة</button>
+    <button onclick="exportTable()">📥 تصدير إلى Excel</button>
+    <button onclick="window.print()">🖨️ طباعة التقرير</button>
+  </div>
+
+  <div id="salesData"></div>
+
+  <div id="grandTotalDiv" class="grand-total" style="display:none;"></div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
   <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwsgEB2gcfp_PXK3c0hyB7qfShc8tRe4QaOcBMxxmwVoUliU5WTGeBfemUGJcPkHP05/exec'; // <<<< Replace this too!
+    const scriptURL = 'YOUR_WEB_APP_URL_HERE'; // <<<<< UPDATE THIS
+    let allSalesData = [];
 
     fetch(scriptURL)
       .then(res => res.json())
       .then(data => {
-        const tbody = document.querySelector("#salesTable tbody");
-        data.forEach(row => {
-          const tr = document.createElement("tr");
-          row.forEach((cell, i) => {
-            const td = document.createElement("td");
-            td.setAttribute("data-label", ["التاريخ", "الوقت", "الصنف", "السعر", "ملاحظات", "نوع العميل"][i]);
-            td.textContent = cell;
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
+        allSalesData = data;
+        displaySales(allSalesData);
       })
       .catch(err => {
         document.body.innerHTML += `<p style="color:red;">فشل تحميل البيانات</p>`;
       });
+
+    function displaySales(data) {
+      const grouped = {};
+      const salesDiv = document.getElementById("salesData");
+      salesDiv.innerHTML = "";
+
+      // Group by date
+      data.forEach(row => {
+        const [date, timestamp, item, price, notes, customerType] = row;
+        if (!grouped[date]) grouped[date] = [];
+        grouped[date].push({ timestamp, item, price: Number(price), notes, customerType });
+      });
+
+      let grandTotal = 0;
+
+      for (const date in grouped) {
+        const sales = grouped[date];
+        let tableHTML = `
+          <h3>اليوم: ${date}</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>الوقت</th>
+                <th>الصنف</th>
+                <th>السعر</th>
+                <th>ملاحظات</th>
+                <th>نوع العميل</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        let total = 0;
+
+        sales.forEach(sale => {
+          tableHTML += `
+            <tr>
+              <td data-label="الوقت">${sale.timestamp}</td>
+              <td data-label="الصنف">${sale.item}</td>
+              <td data-label="السعر">${sale.price}</td>
+              <td data-label="ملاحظات">${sale.notes}</td>
+              <td data-label="نوع العميل">${sale.customerType}</td>
+            </tr>`;
+          total += sale.price;
+        });
+
+        grandTotal += total;
+
+        tableHTML += `
+            <tr class="total">
+              <td colspan="2">الإجمالي لليوم</td>
+              <td colspan="3">${total.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>`;
+
+        salesDiv.innerHTML += tableHTML;
+      }
+
+      // Show grand total
+      const grandTotalDiv = document.getElementById("grandTotalDiv");
+      grandTotalDiv.innerHTML = `الإجمالي الكلي لجميع المبيعات: ${grandTotal.toFixed(2)} جنيه`;
+      grandTotalDiv.style.display = "block";
+    }
+
+    function applyFilters() {
+      const customerType = document.getElementById("customerTypeFilter").value;
+      const dateFilter = document.getElementById("dateFilter").value;
+
+      let filteredData = allSalesData;
+
+      if (customerType) {
+        filteredData = filteredData.filter(row => row[5] === customerType);
+      }
+      if (dateFilter) {
+        filteredData = filteredData.filter(row => row[0] === dateFilter);
+      }
+
+      displaySales(filteredData);
+    }
+
+    function resetFilters() {
+      document.getElementById("customerTypeFilter").value = "";
+      document.getElementById("dateFilter").value = "";
+      displaySales(allSalesData);
+    }
+
+    function exportTable() {
+      let rows = [["التاريخ", "الوقت", "الصنف", "السعر", "ملاحظات", "نوع العميل"]];
+      allSalesData.forEach(row => rows.push(row));
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "المبيعات");
+
+      XLSX.writeFile(workbook, "Sales_Report.xlsx");
+    }
   </script>
 </body>
 </html>
