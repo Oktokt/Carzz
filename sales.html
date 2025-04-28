@@ -18,9 +18,10 @@
             text-align: center;
             margin-bottom: 30px;
             color: #333;
+            font-size: 24px;
         }
         .sales-container {
-            max-width: 1200px;
+            max-width: 100%;
             margin: 0 auto;
         }
         .sales-table-container {
@@ -30,13 +31,15 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
+            overflow-x: auto; /* Enable horizontal scrolling if necessary */
         }
         .sales-table-container h2 {
             margin-bottom: 20px;
             color: #4CAF50;
+            font-size: 20px;
         }
         .sales-summary {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #4CAF50;
             margin-bottom: 10px;
@@ -52,6 +55,7 @@
         th, td {
             padding: 12px 15px;
             text-align: center;
+            font-size: 14px; /* Adjust font size for smaller screens */
         }
         th {
             background-color: #4CAF50;
@@ -68,6 +72,43 @@
             margin-top: 20px;
             font-weight: bold;
             color: #f44336;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 22px;
+            }
+            .sales-table-container h2 {
+                font-size: 18px;
+            }
+            table {
+                font-size: 12px;
+            }
+            .sales-summary {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+            .sales-table-container h2 {
+                font-size: 16px;
+            }
+            table {
+                font-size: 12px;
+            }
+            .sales-summary {
+                font-size: 14px;
+            }
+            .sales-container {
+                padding: 10px;
+            }
+            th, td {
+                padding: 10px 12px;
+            }
         }
     </style>
 </head>
@@ -120,7 +161,7 @@
     <div class="error" id="errorMessage"></div>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzN0yW_LYK3XjzKF6vv2wY3cuuZME7eJMuE4XSOgVr8pbPoI_Xz7_pLPdPZ1MKEEic/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzCLflaOmS_2ldg26Tm3sEtvC9-Fs56WRXcwmaZ5fKTdLYdVRh2j5-y90F3vrJXPvgS/exec";
 
         async function loadSalesData() {
             try {
@@ -168,7 +209,7 @@
 
         function displaySalesSummary(sales, summaryId) {
             const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.price), 0);
-            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} جنية`;
+            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} ريال`;
         }
 
         function showError(message) {
