@@ -2,212 +2,144 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <title>مبيعات اليوم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>لوحة مبيعات اليوم</title>
-
-  <!-- تحميل Chart.js و datalabels -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-
   <style>
     body {
-      background: #f8f9fa;
       font-family: 'Tajawal', sans-serif;
-      padding: 20px;
+      background: #f9f9f9;
       margin: 0;
+      padding: 20px;
       color: #333;
     }
     .card {
-      background: #fff;
+      background: #ffffff;
       border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       padding: 20px;
       margin-bottom: 30px;
       text-align: center;
+      animation: fadeIn 1s ease forwards;
     }
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       font-weight: bold;
-      color: #007bff;
+      font-size: 24px;
     }
     canvas {
-      margin-top: 20px;
+      margin: 30px 0;
     }
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 30px;
-    }
-    @media (min-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr 1fr;
-      }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
     }
   </style>
 </head>
 <body>
 
-  <h1>مبيعات اليوم</h1>
-
-  <!-- كارت لإجمالي المبيعات -->
-  <div class="card" id="totalSalesCard">
-    <h2>إجمالي المبيعات: <span id="totalSales">0</span> جنيه</h2>
+  <div class="card">
+    <h1>إجمالي مبيعات اليوم: <span id="totalSalesToday">0</span> ريال</h1>
   </div>
 
-  <!-- الرسوم البيانية -->
-  <div class="charts-grid">
-    <div class="card">
-      <h3>مبيعات اليوم</h3>
-      <canvas id="todaySalesChart"></canvas>
-    </div>
+  <canvas id="todaySalesChart" height="100"></canvas>
 
-    <div class="card">
-      <h3>أنواع العملاء اليوم</h3>
-      <canvas id="todayCustomerChart"></canvas>
-    </div>
+  <div class="card">
+    <h1>مبيعات الشهر الحالي</h1>
+    <canvas id="monthSalesChart" height="100"></canvas>
+  </div>
 
-    <div class="card" style="grid-column: span 2;">
-      <h3>مبيعات الشهر الحالي</h3>
-      <canvas id="monthSalesChart"></canvas>
-    </div>
+  <div class="card">
+    <h1>توزيع العملاء اليوم</h1>
+    <canvas id="todayCustomerChart" height="100"></canvas>
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxOe3gnNAFKUz42K4YPMRsXr-RQ6UdsHpKayQ7gQfqtTMlQApq0OEzwIWGe3bMv20U/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxOe3gnNAFKUz42K4YPMRsXr-RQ6UdsHpKayQ7gQfqtTMlQApq0OEzwIWGe3bMv20U/exec"; // ضع رابط السكريبت الخاص بك هنا
 
     async function fetchTodaySales() {
-      try {
-        const response = await fetch(`${scriptURL}?action=getTodaySales`);
-        const data = await response.json();
-        const sales = data.sales;
-
-        // حساب إجمالي المبيعات
-        let totalSales = sales.reduce((sum, sale) => sum + Number(sale.price), 0);
-        document.getElementById('totalSales').textContent = totalSales.toFixed(2);
-
-        // تجهيز بيانات الرسم البياني اليومي
-        const labels = sales.map(sale => sale.item);
-        const prices = sales.map(sale => Number(sale.price));
-        createTodaySalesChart(labels, prices);
-
-        // حساب أنواع العملاء
-        const customerCounts = {};
-        sales.forEach(sale => {
-          customerCounts[sale.customerType] = (customerCounts[sale.customerType] || 0) + 1;
-        });
-        createTodayCustomerChart(customerCounts);
-
-      } catch (error) {
-        console.error("خطأ بجلب مبيعات اليوم:", error);
-      }
+      const response = await fetch(scriptURL + "?action=getTodaySales");
+      const data = await response.json();
+      return data.sales || [];
     }
 
     async function fetchMonthSales() {
-      try {
-        const today = new Date();
-        const month = today.getMonth() + 1;
-        const response = await fetch(`${scriptURL}?action=getSales&dateFilter=`);
-        const data = await response.json();
-        const sales = data.sales.filter(sale => {
-          const saleMonth = new Date(sale.date).getMonth() + 1;
-          return saleMonth === month;
-        });
-
-        const days = {};
-        sales.forEach(sale => {
-          const day = new Date(sale.date).getDate();
-          days[day] = (days[day] || 0) + Number(sale.price);
-        });
-
-        const dayLabels = Object.keys(days).map(d => `اليوم ${d}`);
-        const dayTotals = Object.values(days);
-
-        createMonthSalesChart(dayLabels, dayTotals);
-      } catch (error) {
-        console.error("خطأ بجلب مبيعات الشهر:", error);
-      }
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const sheetName = "شهر " + month;
+      const response = await fetch(scriptURL + "?action=getSales");
+      const data = await response.json();
+      return data.sales || [];
     }
 
-    function createTodaySalesChart(labels, data) {
-      new Chart(document.getElementById('todaySalesChart'), {
+    function generateLineChart(ctx, labels, dataPoints, title) {
+      new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [{
-            label: 'سعر البيع',
-            data: data,
-            borderColor: '#007bff',
+            label: title,
+            data: dataPoints,
+            fill: true,
             backgroundColor: 'rgba(0,123,255,0.1)',
-            fill: true,
-            tension: 0.4
+            borderColor: '#007bff',
+            tension: 0.4,
+            pointBackgroundColor: '#007bff'
           }]
         },
         options: {
           responsive: true,
           animation: {
-            duration: 1500,
-            easing: 'easeOutBounce'
-          },
-          plugins: {
-            legend: {
-              labels: { color: '#555', font: { weight: 'bold' } }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: '#333' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
-            },
-            y: {
-              ticks: { color: '#333' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
-            }
-          }
-        }
-      });
-    }
-
-    function createMonthSalesChart(labels, data) {
-      new Chart(document.getElementById('monthSalesChart'), {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'إجمالي المبيعات',
-            data: data,
-            borderColor: '#dc3545',
-            backgroundColor: 'rgba(220,53,69,0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          animation: {
-            duration: 2000,
+            duration: 1000,
             easing: 'easeOutQuart'
           },
-          plugins: {
-            legend: {
-              labels: { color: '#555', font: { weight: 'bold' } }
-            }
-          },
           scales: {
             x: {
-              ticks: { color: '#333' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
+              grid: {
+                color: 'rgba(0,0,0,0.05)'
+              },
+              ticks: {
+                color: '#333',
+                font: {
+                  weight: 'bold'
+                }
+              }
             },
             y: {
-              ticks: { color: '#333' },
-              grid: { color: 'rgba(0,0,0,0.05)' }
+              grid: {
+                color: 'rgba(0,0,0,0.05)'
+              },
+              ticks: {
+                color: '#333',
+                font: {
+                  weight: 'bold'
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#333',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              }
+            },
+            tooltip: {
+              backgroundColor: '#fff',
+              bodyColor: '#333',
+              titleColor: '#007bff'
             }
           }
         }
       });
     }
 
-    function createTodayCustomerChart(customerCounts) {
-      new Chart(document.getElementById('todayCustomerChart'), {
+    function generatePieChart(ctx, customerCounts) {
+      new Chart(ctx, {
         type: 'pie',
         data: {
           labels: Object.keys(customerCounts),
@@ -215,7 +147,12 @@
             label: 'أنواع العملاء',
             data: Object.values(customerCounts),
             backgroundColor: [
-              '#007bff', '#dc3545', '#ffc107', '#28a745', '#17a2b8', '#6f42c1'
+              '#007bff',
+              '#dc3545',
+              '#ffc107',
+              '#28a745',
+              '#17a2b8',
+              '#6f42c1'
             ],
             borderColor: '#fff',
             borderWidth: 2
@@ -223,16 +160,37 @@
         },
         options: {
           responsive: true,
+          animation: {
+            duration: 1000,
+            easing: 'easeOutBack'
+          },
           plugins: {
             legend: {
               position: 'bottom',
-              labels: { color: '#555', font: { weight: 'bold' } }
+              labels: {
+                color: '#333',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  let value = context.raw || 0;
+                  let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  let percentage = ((value / total) * 100).toFixed(1);
+                  return `${label}: ${percentage}% (${value})`;
+                }
+              }
             },
             datalabels: {
-              color: '#333',
               anchor: 'end',
               align: 'end',
               offset: 10,
+              color: '#333',
               font: {
                 weight: 'bold',
                 size: 12
@@ -243,20 +201,55 @@
                 return percentage;
               }
             }
-          },
-          animation: {
-            animateRotate: true,
-            animateScale: true,
-            duration: 2000,
-            easing: 'easeOutElastic'
           }
         },
         plugins: [ChartDataLabels]
       });
     }
 
-    fetchTodaySales();
-    fetchMonthSales();
+    async function init() {
+      const todaySales = await fetchTodaySales();
+      const monthSales = await fetchMonthSales();
+
+      // إجمالي مبيعات اليوم
+      const totalToday = todaySales.reduce((sum, sale) => sum + (parseFloat(sale.price) || 0), 0);
+      document.getElementById('totalSalesToday').textContent = totalToday.toFixed(2);
+
+      // رسم مبيعات اليوم
+      const todayCtx = document.getElementById('todaySalesChart').getContext('2d');
+      generateLineChart(
+        todayCtx,
+        todaySales.map(sale => new Date(sale.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })),
+        todaySales.map(sale => sale.price),
+        'مبيعات اليوم'
+      );
+
+      // رسم مبيعات الشهر
+      const monthCtx = document.getElementById('monthSalesChart').getContext('2d');
+      const dailySales = {};
+      monthSales.forEach(sale => {
+        const day = new Date(sale.date).getDate();
+        dailySales[day] = (dailySales[day] || 0) + (parseFloat(sale.price) || 0);
+      });
+      const days = Object.keys(dailySales).sort((a, b) => a - b);
+      generateLineChart(
+        monthCtx,
+        days,
+        days.map(day => dailySales[day]),
+        'مبيعات الشهر'
+      );
+
+      // رسم توزيع العملاء
+      const todayCustomerCtx = document.getElementById('todayCustomerChart').getContext('2d');
+      const customerCounts = {};
+      todaySales.forEach(sale => {
+        const type = sale.customerType || 'غير معروف';
+        customerCounts[type] = (customerCounts[type] || 0) + 1;
+      });
+      generatePieChart(todayCustomerCtx, customerCounts);
+    }
+
+    init();
   </script>
 
 </body>
