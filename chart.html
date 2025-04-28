@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة المبيعات</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -67,6 +67,10 @@
   <canvas id="todaySalesChart"></canvas>
 </div>
 
+<div class="chart-container">
+  <canvas id="todayCustomerChart"></canvas>
+</div>
+
 <div id="monthTotal" class="card">تحميل إجمالي مبيعات الشهر...</div>
 
 <div class="chart-container">
@@ -84,8 +88,9 @@ async function fetchTodaySales() {
   const total = sales.reduce((sum, sale) => sum + Number(sale.price || 0), 0);
   document.getElementById('todayTotal').textContent = "إجمالي مبيعات اليوم: " + total + " جنيه";
 
-  const ctx = document.getElementById('todaySalesChart').getContext('2d');
-  new Chart(ctx, {
+  // رسم مبيعات اليوم
+  const ctx1 = document.getElementById('todaySalesChart').getContext('2d');
+  new Chart(ctx1, {
     type: 'bar',
     data: {
       labels: sales.map(s => s.item),
@@ -103,10 +108,40 @@ async function fetchTodaySales() {
         legend: { display: false }
       },
       scales: {
-        y: {
-          beginAtZero: true
-        }
+        y: { beginAtZero: true }
       }
+    }
+  });
+
+  // رسم توزيع العملاء
+  const customerCounts = {};
+  sales.forEach(sale => {
+    const customer = sale.customerType || "غير محدد";
+    customerCounts[customer] = (customerCounts[customer] || 0) + 1;
+  });
+
+  const ctx2 = document.getElementById('todayCustomerChart').getContext('2d');
+  new Chart(ctx2, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(customerCounts),
+      datasets: [{
+        label: 'أنواع العملاء',
+        data: Object.values(customerCounts),
+        backgroundColor: [
+          '#007bff',
+          '#dc3545',
+          '#ffc107',
+          '#28a745',
+          '#17a2b8',
+          '#6610f2'
+        ],
+        borderColor: 'white',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true
     }
   });
 }
@@ -144,7 +179,7 @@ async function fetchMonthSales() {
   });
 }
 
-// تشغيل الاثنين مع فتح الصفحة
+// تحميل كل شيء عند فتح الصفحة
 fetchTodaySales();
 fetchMonthSales();
 </script>
