@@ -1,232 +1,143 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>عرض المبيعات مع فلترة وتصدير ورسوم بيانية</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-    th, td { padding: 10px; border: 1px solid #ccc; text-align: right; }
-    th { background-color: #f2f2f2; }
-    .total { font-weight: bold; background: #e0ffe0; }
-    .grand-total { font-weight: bold; background: #ffe0e0; padding: 15px; margin-top: 20px; font-size: 18px; }
-    .filters { margin-bottom: 20px; }
-    select, input[type="date"], button { padding: 8px; margin: 5px 0; width: 100%; }
-    canvas { max-width: 100%; margin-top: 30px; }
-    @media (max-width: 600px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      td { border: none; border-bottom: 1px solid #ddd; }
-      td::before { content: attr(data-label); font-weight: bold; display: block; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عرض مبيعات اليوم والأمس</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .error {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #f44336;
+        }
+    </style>
 </head>
 <body>
-  <h2>عرض المبيعات مع فلترة وتصدير ورسوم بيانية</h2>
 
-  <div class="filters">
-    <label>اختر نوع العميل</label>
-    <select id="customerTypeFilter">
-      <option value="">-- كل الأنواع --</option>
-      <option value="عمال Carz">عمال Carz</option>
-      <option value="عمال InstaFix">عمال InstaFix</option>
-      <option value="Owners">Owners</option>
-      <option value="عملاء مكان">عملاء مكان</option>
-      <option value="عملاء من الشارع">عملاء من الشارع</option>
-    </select>
+    <h1>مبيعات اليوم والأمس</h1>
 
-    <label>اختر تاريخ محدد</label>
-    <input type="date" id="dateFilter">
-
-    <button onclick="applyFilters()">تطبيق الفلترة</button>
-    <button onclick="resetFilters()" style="background:#dc3545;">مسح الفلترة</button>
-    <button onclick="exportTable()">📥 تصدير إلى Excel</button>
-    <button onclick="window.print()">🖨️ طباعة التقرير</button>
-  </div>
-
-  <div id="salesData"></div>
-
-  <div id="grandTotalDiv" class="grand-total" style="display:none;"></div>
-
-  <h3>رسم بياني - إجمالي المبيعات اليومية</h3>
-  <canvas id="dailySalesChart"></canvas>
-
-  <h3>رسم بياني - توزيع حسب نوع العميل</h3>
-  <canvas id="customerTypeChart"></canvas>
-
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycby0Yxjntinfd0s1DdyhrUO1gTn9jS5Z6M0A0WHIeDU/dev'; // <<<<< UPDATE THIS
-    let allSalesData = [];
-
-    fetch(scriptURL)
-      .then(res => res.json())
-      .then(data => {
-        allSalesData = data;
-        displaySales(allSalesData);
-        drawCharts(allSalesData);
-      })
-      .catch(err => {
-        document.body.innerHTML += `<p style="color:red;">فشل تحميل البيانات</p>`;
-      });
-
-    function displaySales(data) {
-      const grouped = {};
-      const salesDiv = document.getElementById("salesData");
-      salesDiv.innerHTML = "";
-
-      data.forEach(row => {
-        const [date, timestamp, item, price, notes, customerType] = row;
-        if (!grouped[date]) grouped[date] = [];
-        grouped[date].push({ timestamp, item, price: Number(price), notes, customerType });
-      });
-
-      let grandTotal = 0;
-
-      for (const date in grouped) {
-        const sales = grouped[date];
-        let tableHTML = `
-          <h3>اليوم: ${date}</h3>
-          <table>
+    <div id="todaySalesContainer">
+        <h2>مبيعات اليوم</h2>
+        <table id="todaySalesTable">
             <thead>
-              <tr>
-                <th>الوقت</th>
-                <th>الصنف</th>
-                <th>السعر</th>
-                <th>ملاحظات</th>
-                <th>نوع العميل</th>
-              </tr>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>الملاحظات</th>
+                    <th>نوع العميل</th>
+                </tr>
             </thead>
-            <tbody>`;
+            <tbody>
+                <!-- Today's sales data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
 
-        let total = 0;
+    <div id="yesterdaySalesContainer">
+        <h2>مبيعات أمس</h2>
+        <table id="yesterdaySalesTable">
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>المنتج</th>
+                    <th>السعر</th>
+                    <th>الملاحظات</th>
+                    <th>نوع العميل</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Yesterday's sales data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
 
-        sales.forEach(sale => {
-          tableHTML += `
-            <tr>
-              <td data-label="الوقت">${sale.timestamp}</td>
-              <td data-label="الصنف">${sale.item}</td>
-              <td data-label="السعر">${sale.price}</td>
-              <td data-label="ملاحظات">${sale.notes}</td>
-              <td data-label="نوع العميل">${sale.customerType}</td>
-            </tr>`;
-          total += sale.price;
-        });
+    <div class="error" id="errorMessage"></div>
 
-        grandTotal += total;
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxBBnRwNfvYcB8CuUv-3MvrIS1SeccZfHkTT2q-5Dcu7jYIhuIxGBuar_UydopyRa8C/exec";
 
-        tableHTML += `
-            <tr class="total">
-              <td colspan="2">الإجمالي لليوم</td>
-              <td colspan="3">${total.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>`;
+        async function loadSalesData() {
+            try {
+                // Load today's sales
+                const todayResponse = await fetch(`${scriptURL}?action=getTodaySales`);
+                const todayData = await todayResponse.json();
+                if (todayData.sales && todayData.sales.length > 0) {
+                    displaySalesData(todayData.sales, "todaySalesTable");
+                } else {
+                    showError("لا توجد مبيعات اليوم.");
+                }
 
-        salesDiv.innerHTML += tableHTML;
-      }
+                // Load yesterday's sales
+                const yesterdayResponse = await fetch(`${scriptURL}?action=getYesterdaySales`);
+                const yesterdayData = await yesterdayResponse.json();
+                if (yesterdayData.sales && yesterdayData.sales.length > 0) {
+                    displaySalesData(yesterdayData.sales, "yesterdaySalesTable");
+                } else {
+                    showError("لا توجد مبيعات أمس.");
+                }
 
-      const grandTotalDiv = document.getElementById("grandTotalDiv");
-      grandTotalDiv.innerHTML = `الإجمالي الكلي لجميع المبيعات: ${grandTotal.toFixed(2)} جنيه`;
-      grandTotalDiv.style.display = "block";
-    }
-
-    function applyFilters() {
-      const customerType = document.getElementById("customerTypeFilter").value;
-      const dateFilter = document.getElementById("dateFilter").value;
-
-      let filteredData = allSalesData;
-
-      if (customerType) {
-        filteredData = filteredData.filter(row => row[5] === customerType);
-      }
-      if (dateFilter) {
-        filteredData = filteredData.filter(row => row[0] === dateFilter);
-      }
-
-      displaySales(filteredData);
-      drawCharts(filteredData);
-    }
-
-    function resetFilters() {
-      document.getElementById("customerTypeFilter").value = "";
-      document.getElementById("dateFilter").value = "";
-      displaySales(allSalesData);
-      drawCharts(allSalesData);
-    }
-
-    function exportTable() {
-      let rows = [["التاريخ", "الوقت", "الصنف", "السعر", "ملاحظات", "نوع العميل"]];
-      allSalesData.forEach(row => rows.push(row));
-
-      const worksheet = XLSX.utils.aoa_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "المبيعات");
-
-      XLSX.writeFile(workbook, "Sales_Report.xlsx");
-    }
-
-    function drawCharts(data) {
-      // Group sales by day
-      const dailyTotals = {};
-      // Group by customer type
-      const customerTypeTotals = {};
-
-      data.forEach(row => {
-        const [date, timestamp, item, price, notes, customerType] = row;
-        if (!dailyTotals[date]) dailyTotals[date] = 0;
-        dailyTotals[date] += Number(price);
-
-        if (!customerTypeTotals[customerType]) customerTypeTotals[customerType] = 0;
-        customerTypeTotals[customerType] += Number(price);
-      });
-
-      const dates = Object.keys(dailyTotals);
-      const totals = Object.values(dailyTotals);
-
-      const ctx1 = document.getElementById('dailySalesChart').getContext('2d');
-      if (window.dailyChart) window.dailyChart.destroy();
-      window.dailyChart = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels: dates,
-          datasets: [{
-            label: 'إجمالي المبيعات',
-            data: totals,
-            backgroundColor: '#4CAF50'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
+            } catch (error) {
+                showError("حدث خطأ في تحميل البيانات.");
             }
-          }
         }
-      });
 
-      const customerTypes = Object.keys(customerTypeTotals);
-      const customerTotals = Object.values(customerTypeTotals);
+        function displaySalesData(sales, tableId) {
+            const tableBody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Clear the table before adding new data
 
-      const ctx2 = document.getElementById('customerTypeChart').getContext('2d');
-      if (window.customerChart) window.customerChart.destroy();
-      window.customerChart = new Chart(ctx2, {
-        type: 'pie',
-        data: {
-          labels: customerTypes,
-          datasets: [{
-            label: 'مبيعات حسب نوع العميل',
-            data: customerTotals,
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#AA66CC', '#FF9933']
-          }]
-        },
-        options: {
-          responsive: true
+            sales.forEach(sale => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sale.date}</td>
+                    <td>${sale.item}</td>
+                    <td>${sale.price}</td>
+                    <td>${sale.notes}</td>
+                    <td>${sale.customerType}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('errorMessage').style.display = 'none';
         }
-      });
-    }
-  </script>
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        // Load sales data when the page loads
+        window.onload = loadSalesData;
+    </script>
+
 </body>
 </html>
