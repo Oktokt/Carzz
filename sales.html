@@ -8,30 +8,60 @@
     <style>
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #121212;
-            color: #ffffff;
+            background-color: #f4f4f9;
+            color: #333;
             margin: 0;
             padding: 20px;
+            box-sizing: border-box;
         }
         h1 {
             text-align: center;
             margin-bottom: 30px;
+            color: #333;
+        }
+        .sales-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .sales-table-container {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        .sales-table-container h2 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        .sales-summary {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 10px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
         }
         table, th, td {
             border: 1px solid #ddd;
         }
         th, td {
-            padding: 10px;
+            padding: 12px 15px;
             text-align: center;
         }
         th {
             background-color: #4CAF50;
             color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
         }
         .error {
             text-align: center;
@@ -45,46 +75,52 @@
 
     <h1>مبيعات اليوم والأمس</h1>
 
-    <div id="todaySalesContainer">
-        <h2>مبيعات اليوم</h2>
-        <table id="todaySalesTable">
-            <thead>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>المنتج</th>
-                    <th>السعر</th>
-                    <th>الملاحظات</th>
-                    <th>نوع العميل</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Today's sales data will be inserted here -->
-            </tbody>
-        </table>
-    </div>
+    <div class="sales-container">
+        <!-- Today's Sales -->
+        <div id="todaySalesContainer" class="sales-table-container">
+            <h2>مبيعات اليوم</h2>
+            <div id="todaySalesSummary" class="sales-summary"></div>
+            <table id="todaySalesTable">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المنتج</th>
+                        <th>السعر</th>
+                        <th>الملاحظات</th>
+                        <th>نوع العميل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Today's sales data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
 
-    <div id="yesterdaySalesContainer">
-        <h2>مبيعات أمس</h2>
-        <table id="yesterdaySalesTable">
-            <thead>
-                <tr>
-                    <th>التاريخ</th>
-                    <th>المنتج</th>
-                    <th>السعر</th>
-                    <th>الملاحظات</th>
-                    <th>نوع العميل</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Yesterday's sales data will be inserted here -->
-            </tbody>
-        </table>
+        <!-- Yesterday's Sales -->
+        <div id="yesterdaySalesContainer" class="sales-table-container">
+            <h2>مبيعات أمس</h2>
+            <div id="yesterdaySalesSummary" class="sales-summary"></div>
+            <table id="yesterdaySalesTable">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المنتج</th>
+                        <th>السعر</th>
+                        <th>الملاحظات</th>
+                        <th>نوع العميل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Yesterday's sales data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="error" id="errorMessage"></div>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbylFdq9Dc7-LjNvVKglQ8FN4pjL_LgXgcHdsrQchCSsoiDPo8MtD21Ur-2FE4VmoBVe/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxBBnRwNfvYcB8CuUv-3MvrIS1SeccZfHkTT2q-5Dcu7jYIhuIxGBuar_UydopyRa8C/exec";
 
         async function loadSalesData() {
             try {
@@ -93,6 +129,7 @@
                 const todayData = await todayResponse.json();
                 if (todayData.sales && todayData.sales.length > 0) {
                     displaySalesData(todayData.sales, "todaySalesTable");
+                    displaySalesSummary(todayData.sales, "todaySalesSummary");
                 } else {
                     showError("لا توجد مبيعات اليوم.");
                 }
@@ -102,6 +139,7 @@
                 const yesterdayData = await yesterdayResponse.json();
                 if (yesterdayData.sales && yesterdayData.sales.length > 0) {
                     displaySalesData(yesterdayData.sales, "yesterdaySalesTable");
+                    displaySalesSummary(yesterdayData.sales, "yesterdaySalesSummary");
                 } else {
                     showError("لا توجد مبيعات أمس.");
                 }
@@ -126,8 +164,11 @@
                 `;
                 tableBody.appendChild(row);
             });
+        }
 
-            document.getElementById('errorMessage').style.display = 'none';
+        function displaySalesSummary(sales, summaryId) {
+            const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.price), 0);
+            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} ريال`;
         }
 
         function showError(message) {
