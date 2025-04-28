@@ -168,7 +168,7 @@
 
         function displaySalesSummary(sales, summaryId) {
             const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.price), 0);
-            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} ريال`;
+            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} جنية`;
         }
 
         function showError(message) {
