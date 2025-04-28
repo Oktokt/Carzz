@@ -8,17 +8,19 @@
     <style>
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #f4f4f9;
+            background-color: #f0f4f8;
             color: #333;
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            animation: fadeIn 1s ease-out;
         }
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            color: #333;
+            color: #3c8dbc; /* لون أزرق هادي */
             font-size: 24px;
+            animation: fadeIn 1s ease-out;
         }
         .sales-container {
             max-width: 100%;
@@ -32,22 +34,25 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
             overflow-x: auto; /* Enable horizontal scrolling if necessary */
+            animation: slideUp 0.8s ease-out;
         }
         .sales-table-container h2 {
             margin-bottom: 20px;
-            color: #4CAF50;
+            color: #ff6666; /* لون أحمر خفيف */
             font-size: 20px;
+            font-weight: bold;
         }
         .sales-summary {
             font-size: 16px;
             font-weight: bold;
-            color: #4CAF50;
+            color: #3c8dbc; /* لون أزرق هادي */
             margin-bottom: 10px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            animation: fadeInTable 1s ease-out;
         }
         table, th, td {
             border: 1px solid #ddd;
@@ -58,20 +63,53 @@
             font-size: 14px; /* Adjust font size for smaller screens */
         }
         th {
-            background-color: #4CAF50;
+            background-color: #3c8dbc; /* لون أزرق هادي */
             color: white;
+            text-transform: uppercase;
         }
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
         tr:hover {
-            background-color: #f1f1f1;
+            background-color: #e6f7ff; /* تأثير عند التمرير */
         }
         .error {
             text-align: center;
             margin-top: 20px;
             font-weight: bold;
             color: #f44336;
+        }
+
+        /* Animation Definitions */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInTable {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
         }
 
         /* Mobile-specific styles */
@@ -209,7 +247,7 @@
 
         function displaySalesSummary(sales, summaryId) {
             const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.price), 0);
-            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} جنية`;
+            document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} ريال`;
         }
 
         function showError(message) {
