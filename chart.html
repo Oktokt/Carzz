@@ -145,7 +145,7 @@ async function fetchTodaySales() {
       responsive: true,
       plugins: {
         datalabels: {
-          color: '#fff',
+          color: '#000', // لون النص الأسود
           font: {
             weight: 'bold',
             size: 14
@@ -155,7 +155,10 @@ async function fetchTodaySales() {
             const percentage = ((value / total) * 100).toFixed(1);
             const label = context.chart.data.labels[context.dataIndex];
             return `${label} - ${percentage}% (${value})`;
-          }
+          },
+          anchor: 'end',
+          align: 'center',
+          offset: 10
         },
         legend: {
           position: 'right'
