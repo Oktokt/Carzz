@@ -1,105 +1,265 @@
-<script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwjJ7cN4eijqkluNFSHEKjuFiGbNGIO3RaBRhOInDpnfsSQyem3LKMWQRKqStbQv19B/exec";
-    let products = {};
-
-    async function fetchProducts() {
-        try {
-            const response = await fetch(scriptURL + "?action=getProducts");
-            const data = await response.json();
-            const itemSelect = document.getElementById('item');
-
-            data.products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.name;
-                option.setAttribute('data-price', product.price);
-                option.textContent = product.name;
-                itemSelect.appendChild(option);
-                products[product.name] = product.price;
-            });
-        } catch (error) {
-            console.error("خطأ في جلب المنتجات:", error);
-        }
-    }
-
-    document.getElementById('item').addEventListener('change', function() {
-        const selected = this.value;
-        const customerType = document.getElementById('customerType').value;
-        if (customerType !== "Owners" && products[selected]) {
-            document.getElementById('price').value = products[selected];
-        }
-        updateTotal();
-    });
-
-    document.getElementById('quantity').addEventListener('input', updateTotal);
-    document.getElementById('price').addEventListener('input', updateTotal);
-
-    document.getElementById('customerType').addEventListener('change', function() {
-        const customerType = this.value;
-        const selected = document.getElementById('item').value;
-        if (customerType === "Owners") {
-            document.getElementById('price').value = 0;
-        } else if (products[selected]) {
-            document.getElementById('price').value = products[selected];
-        }
-        updateTotal();
-    });
-
-    function updateTotal() {
-        const price = parseFloat(document.getElementById('price').value) || 0;
-        const quantity = parseInt(document.getElementById('quantity').value) || 0;
-        const total = price * quantity;
-        document.getElementById('total').value = total.toFixed(2);
-    }
-
-    async function submitSale() {
-        const item = document.getElementById('item').value;
-        const price = parseFloat(document.getElementById('price').value);
-        const quantity = parseInt(document.getElementById('quantity').value);
-        const notes = document.getElementById('notes').value;
-        const customerType = document.getElementById('customerType').value;
-
-        if (!item || isNaN(price) || isNaN(quantity) || !customerType) {
-            showMessage("يرجى ملء جميع الحقول المطلوبة", "error");
-            return;
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل بيع</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            animation: fadeIn 1.5s ease-out;
         }
 
-        if (!confirm("هل تريد تأكيد البيع؟")) return;
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #1e88e5;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 2s ease-out;
+        }
 
-        const payload = {
-            item,
-            price,
-            quantity,
-            notes,
-            customerType
-        };
+        .form-group {
+            margin-bottom: 20px;
+            animation: fadeInUp 1s ease-out;
+        }
 
-        try {
-            const response = await fetch(scriptURL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.result === "success") {
-                showMessage("تم تسجيل البيع بنجاح!", "success");
-                document.getElementById('item').value = "";
-                document.getElementById('quantity').value = 1;
-                document.getElementById('price').value = "";
-                document.getElementById('total').value = "";
-                document.getElementById('notes').value = "";
-                document.getElementById('customerType').value = "";
-            } else {
-                showMessage("فشل في تسجيل البيع. حاول مرة أخرى.", "error");
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            color: #ff7043;
+        }
+
+        input, select, textarea, button {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-top: 8px;
+            font-size: 16px;
+            background-color: #ffffff;
+            color: #333;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #1e88e5;
+            background-color: #e3f2fd;
+        }
+
+        button {
+            background-color: #1e88e5;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background-color 0.3s ease;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        button:hover {
+            background-color: #1565c0;
+        }
+
+        .success, .error {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #43a047;
+        }
+
+        .error {
+            color: #e53935;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 26px; }
+            .form-group { margin-bottom: 15px; }
+            input, select, textarea, button { font-size: 14px; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 22px; }
+            .form-group { margin-bottom: 10px; }
+            input, select, textarea, button { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>تسجيل عملية بيع</h1>
+
+    <div class="form-group">
+        <label for="item">المنتج</label>
+        <select id="item">
+            <option value="">اختر منتج</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="quantity">الكمية</label>
+        <input type="number" id="quantity" min="1" value="1">
+    </div>
+
+    <div class="form-group">
+        <label for="price">السعر</label>
+        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا">
+    </div>
+
+    <div class="form-group">
+        <label for="total">الإجمالي</label>
+        <input type="number" id="total" readonly>
+    </div>
+
+    <div class="form-group">
+        <label for="notes">ملاحظات</label>
+        <textarea id="notes" rows="3" placeholder="أدخل ملاحظاتك هنا..."></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="customerType">نوع العميل</label>
+        <select id="customerType">
+            <option value="">اختر نوع العميل</option>
+            <option>عمال Carz</option>
+            <option>عمال InstaFix</option>
+            <option>Owners</option>
+            <option>عملاء مكان</option>
+            <option>عملاء من الشارع</option>
+        </select>
+    </div>
+
+    <button onclick="submitSale()">بيع</button>
+
+    <div id="message"></div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwjJ7cN4eijqkluNFSHEKjuFiGbNGIO3RaBRhOInDpnfsSQyem3LKMWQRKqStbQv19B/exec";
+        let products = {};
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(scriptURL + "?action=getProducts");
+                const data = await response.json();
+                const itemSelect = document.getElementById('item');
+
+                data.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.name;
+                    option.setAttribute('data-price', product.price);
+                    option.textContent = product.name;
+                    itemSelect.appendChild(option);
+                    products[product.name] = product.price;
+                });
+            } catch (error) {
+                console.error("خطأ في جلب المنتجات:", error);
             }
-        } catch (error) {
-            showMessage("خطأ في الاتصال بالسيرفر.", "error");
         }
-    }
 
-    function showMessage(msg, type) {
-        const messageDiv = document.getElementById('message');
-        messageDiv.className = type;
-        messageDiv.textContent = msg;
-    }
+        document.getElementById('item').addEventListener('change', function() {
+            const selected = this.value;
+            const customerType = document.getElementById('customerType').value;
+            if (customerType !== "Owners" && products[selected]) {
+                document.getElementById('price').value = products[selected];
+            }
+            updateTotal();
+        });
 
-    fetchProducts();
-</script>
+        document.getElementById('quantity').addEventListener('input', updateTotal);
+        document.getElementById('price').addEventListener('input', updateTotal);
+
+        document.getElementById('customerType').addEventListener('change', function() {
+            const customerType = this.value;
+            const selected = document.getElementById('item').value;
+            if (customerType === "Owners") {
+                document.getElementById('price').value = 0;
+            } else if (products[selected]) {
+                document.getElementById('price').value = products[selected];
+            }
+            updateTotal();
+        });
+
+        function updateTotal() {
+            const price = parseFloat(document.getElementById('price').value) || 0;
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const total = price * quantity;
+            document.getElementById('total').value = total.toFixed(2);
+        }
+
+        async function submitSale() {
+            const item = document.getElementById('item').value;
+            const price = parseFloat(document.getElementById('price').value);
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const notes = document.getElementById('notes').value;
+            const customerType = document.getElementById('customerType').value;
+
+            if (!item || isNaN(price) || isNaN(quantity) || !customerType) {
+                showMessage("يرجى ملء جميع الحقول المطلوبة", "error");
+                return;
+            }
+
+            if (!confirm("هل تريد تأكيد البيع؟")) return;
+
+            const payload = {
+                item,
+                price,
+                quantity,
+                notes,
+                customerType
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.result === "success") {
+                    showMessage("تم تسجيل البيع بنجاح!", "success");
+                    document.getElementById('item').value = "";
+                    document.getElementById('quantity').value = 1;
+                    document.getElementById('price').value = "";
+                    document.getElementById('total').value = "";
+                    document.getElementById('notes').value = "";
+                    document.getElementById('customerType').value = "";
+                } else {
+                    showMessage("فشل في تسجيل البيع. حاول مرة أخرى.", "error");
+                }
+            } catch (error) {
+                showMessage("خطأ في الاتصال بالسيرفر.", "error");
+            }
+        }
+
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = msg;
+        }
+
+        fetchProducts();
+    </script>
+</body>
+</html>
