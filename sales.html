@@ -18,10 +18,9 @@
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            color: #3c8dbc; /* الأزرق الهادئ */
+            color: #3c8dbc;
             font-size: 28px;
             font-weight: 700;
-            animation: fadeIn 1s ease-out;
         }
         .sales-container {
             max-width: 100%;
@@ -35,25 +34,23 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
             margin-bottom: 30px;
             overflow-x: auto;
-            animation: slideUp 0.8s ease-out;
         }
         .sales-table-container h2 {
             margin-bottom: 20px;
-            color: #ff6f61; /* الأحمر الخفيف */
+            color: #ff6f61;
             font-size: 22px;
             font-weight: bold;
         }
         .sales-summary {
             font-size: 16px;
             font-weight: bold;
-            color: #3c8dbc; /* الأزرق الهادئ */
+            color: #3c8dbc;
             margin-bottom: 10px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-            animation: fadeInTable 1s ease-out;
         }
         table, th, td {
             border: 1px solid #ddd;
@@ -64,7 +61,7 @@
             font-size: 15px;
         }
         th {
-            background-color: #3c8dbc; /* الأزرق الهادئ */
+            background-color: #3c8dbc;
             color: white;
             text-transform: uppercase;
         }
@@ -81,73 +78,20 @@
             color: #f44336;
         }
 
-        /* Animation Definitions */
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideUp {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInTable {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
-        }
-
-        /* Mobile-specific styles */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 24px;
-            }
-            .sales-table-container h2 {
-                font-size: 18px;
-            }
-            table {
-                font-size: 13px;
-            }
-            .sales-summary {
-                font-size: 14px;
-            }
+            h1 { font-size: 24px; }
+            .sales-table-container h2 { font-size: 18px; }
+            table { font-size: 13px; }
+            .sales-summary { font-size: 14px; }
         }
 
         @media (max-width: 480px) {
-            h1 {
-                font-size: 20px;
-            }
-            .sales-table-container h2 {
-                font-size: 16px;
-            }
-            table {
-                font-size: 12px;
-            }
-            .sales-summary {
-                font-size: 14px;
-            }
-            .sales-container {
-                padding: 10px;
-            }
-            th, td {
-                padding: 10px 12px;
-            }
+            h1 { font-size: 20px; }
+            .sales-table-container h2 { font-size: 16px; }
+            table { font-size: 12px; }
+            .sales-summary { font-size: 14px; }
+            .sales-container { padding: 10px; }
+            th, td { padding: 10px 12px; }
         }
     </style>
 </head>
@@ -166,13 +110,13 @@
                         <th>التاريخ</th>
                         <th>المنتج</th>
                         <th>السعر</th>
+                        <th>الكمية</th>
+                        <th>الإجمالي</th>
                         <th>الملاحظات</th>
                         <th>نوع العميل</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Today's sales data will be inserted here -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
 
@@ -186,13 +130,13 @@
                         <th>التاريخ</th>
                         <th>المنتج</th>
                         <th>السعر</th>
+                        <th>الكمية</th>
+                        <th>الإجمالي</th>
                         <th>الملاحظات</th>
                         <th>نوع العميل</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Yesterday's sales data will be inserted here -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -200,11 +144,10 @@
     <div class="error" id="errorMessage"></div>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbzCLflaOmS_2ldg26Tm3sEtvC9-Fs56WRXcwmaZ5fKTdLYdVRh2j5-y90F3vrJXPvgS/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxOh4xfbB4l0cnWy6UhN_BDMe3vRq_KU1-FhVlYdcgXUpQNzUA4g27Nb2nDVjt8/exec";
 
         async function loadSalesData() {
             try {
-                // Load today's sales
                 const todayResponse = await fetch(`${scriptURL}?action=getTodaySales`);
                 const todayData = await todayResponse.json();
                 if (todayData.sales && todayData.sales.length > 0) {
@@ -214,7 +157,6 @@
                     showError("لا توجد مبيعات اليوم.");
                 }
 
-                // Load yesterday's sales
                 const yesterdayResponse = await fetch(`${scriptURL}?action=getYesterdaySales`);
                 const yesterdayData = await yesterdayResponse.json();
                 if (yesterdayData.sales && yesterdayData.sales.length > 0) {
@@ -231,7 +173,7 @@
 
         function displaySalesData(sales, tableId) {
             const tableBody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = ''; // Clear the table before adding new data
+            tableBody.innerHTML = '';
 
             sales.forEach(sale => {
                 const row = document.createElement('tr');
@@ -239,6 +181,8 @@
                     <td>${sale.date}</td>
                     <td>${sale.item}</td>
                     <td>${sale.price}</td>
+                    <td>${sale.quantity}</td>
+                    <td>${sale.total}</td>
                     <td>${sale.notes}</td>
                     <td>${sale.customerType}</td>
                 `;
@@ -247,16 +191,16 @@
         }
 
         function displaySalesSummary(sales, summaryId) {
-            const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.price), 0);
+            const totalSales = sales.reduce((total, sale) => total + parseFloat(sale.total || 0), 0);
             document.getElementById(summaryId).textContent = `إجمالي المبيعات: ${totalSales.toFixed(2)} جنية`;
         }
 
         function showError(message) {
-            document.getElementById('errorMessage').textContent = message;
-            document.getElementById('errorMessage').style.display = 'block';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
         }
 
-        // Load sales data when the page loads
         window.onload = loadSalesData;
     </script>
 
