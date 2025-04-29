@@ -1,83 +1,83 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>تحديث المخزون</title>
-    <style>
-      body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; }
-      table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-      th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-      input[type="number"] { width: 60px; padding: 5px; }
-      button { margin-top: 15px; padding: 10px 20px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    </style>
-  </head>
-  <body>
-    <h2>تحديث كميات المخزون</h2>
-    <form id="stockForm">
-      <table id="stockTable">
-        <thead>
-          <tr>
-            <th>المنتج</th>
-            <th>الكمية الحالية</th>
-            <th>الكمية المراد إضافتها</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button type="submit">حفظ</button>
-    </form>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تحديث المخزون</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    input[type="number"] { width: 60px; padding: 5px; }
+    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>تحديث كميات المخزون</h2>
+  <form id="stockForm">
+    <table id="stockTable">
+      <thead>
+        <tr>
+          <th>المنتج</th>
+          <th>الكمية الحالية</th>
+          <th>الكمية المراد إضافتها</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="submit">حفظ</button>
+  </form>
 
-    <script>
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbzwLzvaMNIpKedYPDU9d-nWOzf35HgehwjS7NCj1z1GIWsJOchHqGsnCWA33xpiS9NR/exec';
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyd_jrcg8At8N3TTYIagj37fkeKKy3iX4zZfJ1WN9m5U21Yi5X3_Eg6-bnuvYJ91cbN/exec';
 
-      window.onload = function() {
-        fetch(`${scriptURL}?action=getStock`)
-          .then(res => res.json())
-          .then(data => {
-            const tbody = document.querySelector("#stockTable tbody");
-            tbody.innerHTML = "";
-            data.stock.forEach(item => {
-              const row = `
-                <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity}</td>
-                  <td><input type="number" name="${item.name}" min="0" value="0"></td>
-                </tr>`;
-              tbody.innerHTML += row;
-            });
-          });
-      };
-
-      document.getElementById("stockForm").addEventListener("submit", function(e) {
-        e.preventDefault();
-        const inputs = document.querySelectorAll("input[type='number']");
-        const additions = [];
-
-        inputs.forEach(input => {
-          const value = parseInt(input.value);
-          if (!isNaN(value) && value > 0) {
-            additions.push({ name: input.name, quantity: value });
-          }
-        });
-
-        if (additions.length === 0) {
-          alert("أدخل كميات لإضافتها أولاً");
-          return;
-        }
-
-        fetch(`${scriptURL}?action=addStock`, {
-          method: "POST",
-          body: JSON.stringify({ items: additions })
-        })
+    window.onload = function() {
+      fetch(`${scriptURL}?action=getStock`)
         .then(res => res.json())
-        .then(res => {
-          if (res.result === "success") {
-            location.reload(); // إعادة تحميل الصفحة بعد الحفظ
-          } else {
-            alert("حدث خطأ أثناء الحفظ");
-          }
+        .then(data => {
+          const tbody = document.querySelector("#stockTable tbody");
+          tbody.innerHTML = "";
+          data.stock.forEach(item => {
+            const row = `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td><input type="number" name="${item.name}" min="0" value="0"></td>
+              </tr>`;
+            tbody.innerHTML += row;
+          });
         });
+    };
+
+    document.getElementById("stockForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const inputs = document.querySelectorAll("input[type='number']");
+      const additions = [];
+
+      inputs.forEach(input => {
+        const value = parseInt(input.value);
+        if (!isNaN(value) && value > 0) {
+          additions.push({ name: input.name, quantity: value });
+        }
       });
-    </script>
-  </body>
+
+      if (additions.length === 0) {
+        alert("أدخل كميات لإضافتها أولاً");
+        return;
+      }
+
+      fetch(`${scriptURL}?action=addStock`, {
+        method: "POST",
+        body: JSON.stringify({ items: additions })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.result === "success") {
+          location.reload();
+        } else {
+          alert("حدث خطأ أثناء الحفظ");
+        }
+      });
+    });
+  </script>
+</body>
 </html>
