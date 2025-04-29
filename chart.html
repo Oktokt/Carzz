@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>لوحة المبيعات</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
       font-family: 'Tajawal', sans-serif;
@@ -78,15 +79,15 @@
 </div>
 
 <script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbxOh4xfbB4l0cnWy6UhN_BDMe3vRq_KU1-FhVlYdcgXUpQNzUA4g27Nb2nDVjt8/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxOh4xfbB4l0cnWy6UhN_BDMe3vRq_KU1-FhVlYdcgXUpQNzUA4g27Nb2nDVjt8/exec"; // ضع هنا رابط السكربت الخاص بك
 
 async function fetchTodaySales() {
   const response = await fetch(scriptURL + "?action=getTodaySales");
   const data = await response.json();
   
   const sales = data.sales || [];
-  const total = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-  document.getElementById('todayTotal').textContent = "إجمالي مبيعات اليوم: " + total.toFixed(2) + " جنيه";
+  const total = sales.reduce((sum, sale) => sum + Number(sale.price || 0), 0);
+  document.getElementById('todayTotal').textContent = "إجمالي مبيعات اليوم: " + total + " جنيه";
 
   // رسم مبيعات اليوم
   const ctx1 = document.getElementById('todaySalesChart').getContext('2d');
@@ -96,9 +97,9 @@ async function fetchTodaySales() {
       labels: sales.map(s => s.item),
       datasets: [{
         label: 'مبيعات اليوم',
-        data: sales.map(s => Number(s.total || 0)),
+        data: sales.map(s => s.price),
         backgroundColor: 'rgba(0, 123, 255, 0.6)',
-        borderColor: 'rgba(0, 123, 255, 1)',
+        borderColor: 'rgba(220, 53, 69, 0.8)',
         borderWidth: 1
       }]
     },
@@ -141,8 +142,27 @@ async function fetchTodaySales() {
       }]
     },
     options: {
-      responsive: true
-    }
+      responsive: true,
+      plugins: {
+        datalabels: {
+          color: '#fff',
+          font: {
+            weight: 'bold',
+            size: 14
+          },
+          formatter: (value, context) => {
+            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+            const percentage = ((value / total) * 100).toFixed(1);
+            const label = context.chart.data.labels[context.dataIndex];
+            return `${label} - ${percentage}% (${value})`;
+          }
+        },
+        legend: {
+          position: 'right'
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
   });
 }
 
@@ -151,8 +171,8 @@ async function fetchMonthSales() {
   const data = await response.json();
   
   const sales = data.sales || [];
-  const total = sales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
-  document.getElementById('monthTotal').textContent = "إجمالي مبيعات الشهر: " + total.toFixed(2) + " جنيه";
+  const total = sales.reduce((sum, sale) => sum + Number(sale.price || 0), 0);
+  document.getElementById('monthTotal').textContent = "إجمالي مبيعات الشهر: " + total + " جنيه";
 
   const ctx = document.getElementById('monthSalesChart').getContext('2d');
   new Chart(ctx, {
@@ -161,7 +181,7 @@ async function fetchMonthSales() {
       labels: sales.map(s => new Date(s.date).toLocaleDateString('ar-EG')),
       datasets: [{
         label: 'مبيعات الشهر',
-        data: sales.map(s => Number(s.total || 0)),
+        data: sales.map(s => s.price),
         fill: true,
         backgroundColor: 'rgba(0, 123, 255, 0.2)',
         borderColor: 'rgba(0, 123, 255, 1)',
@@ -179,7 +199,7 @@ async function fetchMonthSales() {
   });
 }
 
-// تحميل البيانات عند فتح الصفحة
+// تحميل كل شيء عند فتح الصفحة
 fetchTodaySales();
 fetchMonthSales();
 </script>
