@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدارة المخزون</title>
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    input[type="number"] {
+      width: 80px;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>المخزون الحالي</h1>
+<table id="stockTable">
+  <thead>
+    <tr>
+      <th>المنتج</th>
+      <th>الكمية الحالية</th>
+      <th>إضافة كمية</th>
+      <th>تحديث</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbxGLgcBkriI9TY7HiVRvEH5aYY0fHVva2CvdHpl8jMHe9EBe1AKD3NUxrMHOO9CAfC-/exec"; // ضع رابط سكربتك هنا
+
+async function fetchStock() {
+  const response = await fetch(scriptURL + "?action=getStock");
+  const data = await response.json();
+  const tbody = document.querySelector("#stockTable tbody");
+  tbody.innerHTML = "";
+
+  data.stock.forEach(item => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.name}</td>
+      <td>${item.quantity}</td>
+      <td><input type="number" min="0" data-name="${item.name}" placeholder="0"></td>
+      <td><button onclick="updateStock('${item.name}')">حفظ</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function updateStock(name) {
+  const input = document.querySelector(`input[data-name="${name}"]`);
+  const addedQty = parseInt(input.value);
+  if (!addedQty || addedQty <= 0) {
+    alert("من فضلك أدخل كمية صحيحة.");
+    return;
+  }
+
+  const res = await fetch(scriptURL + "?action=addStock", {
+    method: "POST",
+    body: JSON.stringify({ name, quantity: addedQty })
+  });
+
+  const result = await res.json();
+  if (result.success) {
+    alert("تم التحديث بنجاح");
+    fetchStock();
+  } else {
+    alert("حدث خطأ في التحديث");
+  }
+}
+
+fetchStock();
+</script>
+
+</body>
+</html>
