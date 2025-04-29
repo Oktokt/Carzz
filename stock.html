@@ -1,105 +1,86 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <title>إدارة المخزون</title>
-  <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background-color: #f9f9f9;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #007bff;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-    }
-    th, td {
-      padding: 12px;
-      text-align: center;
-      border: 1px solid #ddd;
-    }
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-    input[type="number"] {
-      width: 80px;
-    }
-    button {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>إدارة المخزون</title>
+    <style>
+      body { font-family: sans-serif; direction: rtl; padding: 20px; }
+      table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+      select, input[type="number"] { padding: 5px; margin: 5px 0; width: 100%; }
+      button { padding: 10px 20px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <h2>إضافة مخزون جديد</h2>
+    <form id="stockForm">
+      <label>اختر المنتج:</label>
+      <select id="productSelect" required></select>
 
-<h1>المخزون الحالي</h1>
-<table id="stockTable">
-  <thead>
-    <tr>
-      <th>المنتج</th>
-      <th>الكمية الحالية</th>
-      <th>إضافة كمية</th>
-      <th>تحديث</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+      <label>الكمية المراد إضافتها:</label>
+      <input type="number" id="quantityInput" min="1" required>
 
-<script>
-const scriptURL = "https://script.google.com/macros/s/AKfycbz9PpuU3qgn6GUmFSJKetLPlnduYswrN1s5fTZ5ng-AQBTWAqtsowB9tArpcmuSvmVn/exec"; // ضع رابط سكربتك هنا
+      <button type="submit">حفظ</button>
+    </form>
 
-async function fetchStock() {
-  const response = await fetch(scriptURL + "?action=getStock");
-  const data = await response.json();
-  const tbody = document.querySelector("#stockTable tbody");
-  tbody.innerHTML = "";
+    <h2>المخزون الحالي</h2>
+    <table id="stockTable">
+      <thead>
+        <tr><th>المنتج</th><th>الكمية</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-  data.stock.forEach(item => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${item.name}</td>
-      <td>${item.quantity}</td>
-      <td><input type="number" min="0" data-name="${item.name}" placeholder="0"></td>
-      <td><button onclick="updateStock('${item.name}')">حفظ</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+    <script>
+      // تحميل البيانات عند الفتح
+      window.onload = function() {
+        fetchStock();
+        fetchProducts();
+      };
 
-async function updateStock(name) {
-  const input = document.querySelector(`input[data-name="${name}"]`);
-  const addedQty = parseInt(input.value);
-  if (!addedQty || addedQty <= 0) {
-    alert("من فضلك أدخل كمية صحيحة.");
-    return;
-  }
+      function fetchStock() {
+        fetch(`https://script.google.com/macros/s/AKfycbzwLzvaMNIpKedYPDU9d-nWOzf35HgehwjS7NCj1z1GIWsJOchHqGsnCWA33xpiS9NR/exec?action=getStock`)
+          .then(res => res.json())
+          .then(data => {
+            const tbody = document.querySelector("#stockTable tbody");
+            tbody.innerHTML = "";
+            data.stock.forEach(item => {
+              const row = `<tr><td>${item.name}</td><td>${item.quantity}</td></tr>`;
+              tbody.innerHTML += row;
+            });
+          });
+      }
 
-  const res = await fetch(scriptURL + "?action=addStock", {
-    method: "POST",
-    body: JSON.stringify({ name, quantity: addedQty })
-  });
+      function fetchProducts() {
+        fetch(`https://script.google.com/macros/s/AKfycbzwLzvaMNIpKedYPDU9d-nWOzf35HgehwjS7NCj1z1GIWsJOchHqGsnCWA33xpiS9NR/exec?action=getProducts`)
+          .then(res => res.json())
+          .then(data => {
+            const select = document.getElementById("productSelect");
+            select.innerHTML = "";
+            data.products.forEach(p => {
+              select.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+            });
+          });
+      }
 
-  const result = await res.json();
-  if (result.success) {
-    alert("تم التحديث بنجاح");
-    fetchStock();
-  } else {
-    alert("حدث خطأ في التحديث");
-  }
-}
+      // إرسال بيانات الإضافة
+      document.getElementById("stockForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const name = document.getElementById("productSelect").value;
+        const quantity = document.getElementById("quantityInput").value;
 
-fetchStock();
-</script>
-
-</body>
+        fetch(`https://script.google.com/macros/s/AKfycbzwLzvaMNIpKedYPDU9d-nWOzf35HgehwjS7NCj1z1GIWsJOchHqGsnCWA33xpiS9NR/exec?action=addStock`, {
+          method: "POST",
+          body: JSON.stringify({ name, quantity })
+        }).then(res => res.json())
+          .then(res => {
+            if (res.result === "success") {
+              location.reload(); // إعادة تحميل الصفحة بعد الحفظ
+            } else {
+              alert("خطأ: " + res.message);
+            }
+          });
+      });
+    </script>
+  </body>
 </html>
