@@ -8,8 +8,8 @@
     <style>
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #f4f7fc;  /* خلفية فاتحة وعصرية */
-            color: #333;  /* نص بلون غامق يتناسب مع الخلفية */
+            background-color: #f4f7fc;
+            color: #333;
             margin: 0;
             padding: 20px;
             animation: fadeIn 1.5s ease-out;
@@ -18,7 +18,7 @@
         h1 {
             text-align: center;
             margin-bottom: 40px;
-            color: #1e88e5;  /* أزرق فاتح */
+            color: #1e88e5;
             font-size: 32px;
             font-weight: 700;
             letter-spacing: 1px;
@@ -35,7 +35,7 @@
             font-weight: bold;
             display: block;
             margin-bottom: 10px;
-            color: #ff7043;  /* لون وردي خفيف للملاحظات */
+            color: #ff7043;
         }
 
         input, select, textarea, button {
@@ -52,12 +52,12 @@
         }
 
         input:focus, select:focus, textarea:focus {
-            border-color: #1e88e5;  /* تأثير التركيز */
-            background-color: #e3f2fd;  /* خلفية فاتحة عند التركيز */
+            border-color: #1e88e5;
+            background-color: #e3f2fd;
         }
 
         button {
-            background-color: #1e88e5;  /* أزرق فاتح */
+            background-color: #1e88e5;
             cursor: pointer;
             margin-top: 30px;
             transition: background-color 0.3s ease;
@@ -69,7 +69,7 @@
         }
 
         button:hover {
-            background-color: #1565c0;  /* الأزرق الداكن عند التمرير */
+            background-color: #1565c0;
         }
 
         .success, .error {
@@ -79,61 +79,34 @@
         }
 
         .success {
-            color: #43a047;  /* أخضر مريح للعين */
+            color: #43a047;
         }
 
         .error {
-            color: #e53935;  /* أحمر دافئ */
+            color: #e53935;
         }
 
-        /* تأثيرات الحركة */
         @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes fadeInUp {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
-        /* تحسينات للعرض على الشاشات الصغيرة */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 26px;
-            }
-            .form-group {
-                margin-bottom: 15px;
-            }
-            input, select, textarea, button {
-                font-size: 14px;
-            }
+            h1 { font-size: 26px; }
+            .form-group { margin-bottom: 15px; }
+            input, select, textarea, button { font-size: 14px; }
         }
 
         @media (max-width: 480px) {
-            h1 {
-                font-size: 22px;
-            }
-            .form-group {
-                margin-bottom: 10px;
-            }
-            input, select, textarea, button {
-                font-size: 13px;
-            }
+            h1 { font-size: 22px; }
+            .form-group { margin-bottom: 10px; }
+            input, select, textarea, button { font-size: 13px; }
         }
-
     </style>
 </head>
 <body>
@@ -148,8 +121,18 @@
     </div>
 
     <div class="form-group">
+        <label for="quantity">الكمية</label>
+        <input type="number" id="quantity" min="1" value="1">
+    </div>
+
+    <div class="form-group">
         <label for="price">السعر</label>
-        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا" >
+        <input type="number" id="price" placeholder="سيتم تعبئته تلقائيًا">
+    </div>
+
+    <div class="form-group">
+        <label for="total">الإجمالي</label>
+        <input type="number" id="total" readonly>
     </div>
 
     <div class="form-group">
@@ -182,7 +165,7 @@
                 const response = await fetch(scriptURL + "?action=getProducts");
                 const data = await response.json();
                 const itemSelect = document.getElementById('item');
-                
+
                 data.products.forEach(product => {
                     const option = document.createElement('option');
                     option.value = product.name;
@@ -198,18 +181,45 @@
 
         document.getElementById('item').addEventListener('change', function() {
             const selected = this.value;
-            if (products[selected]) {
+            const customerType = document.getElementById('customerType').value;
+            if (customerType !== "Onwers" && products[selected]) {
                 document.getElementById('price').value = products[selected];
             }
+            updateTotal();
         });
+
+        document.getElementById('quantity').addEventListener('input', updateTotal);
+        document.getElementById('price').addEventListener('input', updateTotal);
+
+        document.getElementById('customerType').addEventListener('change', function() {
+            const customerType = this.value;
+            if (customerType === "Onwers") {
+                document.getElementById('price').value = 0;
+            } else {
+                const selected = document.getElementById('item').value;
+                if (products[selected]) {
+                    document.getElementById('price').value = products[selected];
+                }
+            }
+            updateTotal();
+        });
+
+        function updateTotal() {
+            const price = parseFloat(document.getElementById('price').value) || 0;
+            const quantity = parseInt(document.getElementById('quantity').value) || 0;
+            const total = price * quantity;
+            document.getElementById('total').value = total.toFixed(2);
+        }
 
         async function submitSale() {
             const item = document.getElementById('item').value;
             const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+            const total = document.getElementById('total').value;
             const notes = document.getElementById('notes').value;
             const customerType = document.getElementById('customerType').value;
 
-            if (!item || !price || !customerType) {
+            if (!item || !price || !quantity || !customerType) {
                 showMessage("يرجى ملء جميع الحقول المطلوبة", "error");
                 return;
             }
@@ -219,6 +229,8 @@
             const payload = {
                 item,
                 price,
+                quantity,
+                total,
                 notes,
                 customerType
             };
@@ -232,7 +244,9 @@
                 if (result.result === "success") {
                     showMessage("تم تسجيل البيع بنجاح!", "success");
                     document.getElementById('item').value = "";
+                    document.getElementById('quantity').value = 1;
                     document.getElementById('price').value = "";
+                    document.getElementById('total').value = "";
                     document.getElementById('notes').value = "";
                     document.getElementById('customerType').value = "";
                 } else {
@@ -249,9 +263,7 @@
             messageDiv.textContent = msg;
         }
 
-        // تحميل المنتجات عند فتح الصفحة
         fetchProducts();
     </script>
-
 </body>
 </html>
